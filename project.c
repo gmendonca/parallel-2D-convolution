@@ -2,6 +2,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct {float r; float i;} complex;
 static complex ctmp;
@@ -10,7 +11,7 @@ static complex ctmp;
 
 #define N 512
 
-void c_fft1d(complex *r, int      n, int      isign)
+void c_fft1d(complex *r, int n, int isign)
 {
    int     m,i,i1,j,k,i2,l,l1,l2;
    float   c1,c2,z;
@@ -80,27 +81,71 @@ void c_fft1d(complex *r, int      n, int      isign)
    }
 }
 
-void getData(char fileName[12], float data[N][N]){
+void getData(char fileName[12], complex data[N][N]){
     FILE *fp = fopen(fileName, "r");
 
     int i, j;
 
-    for (i=0;i<N;i++)
-        for (j=0;j<N;j++)
-            fscanf(fp,"%g",&data[i][j]);
+    for (i=0;i<N;i++){
+        for (j=0;j<N;j++){
+            fscanf(fp,"%g",&data[i][j].r);
+            data[i][j].i = 0.00;
+        }
+    }
 
     fclose(fp);
 }
 
+void fft2d(complex data[N][N], int isign){
+
+    int i;
+
+    for(i=0;i<N;i++){
+        c_fft1d(*data[i], N, isign);
+    }
+}
+
+void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
+
+    int i, j;
+
+    for(i=0;i<N;i++){
+        for(j=0;j<N;j++){
+            data3[i][j] = data1[i][j] * data2[i][j];
+        }
+    }
+}
+
+void printfile(){
+
+    FILE *fp = fopen(fileName, "r");
+
+    int i, j;
+
+    for (i=0;i<512;i++) {
+        for (j=0;j<512;j++){
+            fprintf(fp,”%6.2g”,&data[i][j]);
+        }
+        fprintf(fp,”\n”);
+    }
+}
 
 int main(){
-    float data1[N][N], data2;
+    complex data1[N][N], data2[N][N], data3[N][N];
 
-    char fileName1[12] = "sample/1_im1";
-    char fileName2[12] = "sample/1_im2";
+    char fileName1[15] = "sample/1_im1";
+    char fileName2[15] = "sample/1_im2";
 
     getData(fileName1, data1);
     getData(fileName2, data2);
+
+    fft2d(data1, 1);
+    fft2d(data1, 1);
+
+    mmpoint(data1, data2, data3);
+
+    fft2d(data3, -1);
+
 
 
     return 0;
