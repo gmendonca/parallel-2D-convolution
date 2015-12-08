@@ -81,7 +81,7 @@ void c_fft1d(complex *r, int n, int isign)
    }
 }
 
-void getData(char fileName[12], complex data[N][N]){
+void getData(char fileName[15], complex data[N][N]){
     FILE *fp = fopen(fileName, "r");
 
     int i, j;
@@ -101,7 +101,7 @@ void fft2d(complex data[N][N], int isign){
     int i;
 
     for(i=0;i<N;i++){
-        c_fft1d(*data[i], N, isign);
+        c_fft1d(data[i], N, isign);
     }
 }
 
@@ -111,12 +111,12 @@ void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
 
     for(i=0;i<N;i++){
         for(j=0;j<N;j++){
-            data3[i][j] = data1[i][j] * data2[i][j];
+            data3[i][j].r = data1[i][j].r * data2[i][j].r;
         }
     }
 }
 
-void printfile(){
+void printfile(char fileName[15], complex data[N][N]){
 
     FILE *fp = fopen(fileName, "r");
 
@@ -124,10 +124,12 @@ void printfile(){
 
     for (i=0;i<512;i++) {
         for (j=0;j<512;j++){
-            fprintf(fp,”%6.2g”,&data[i][j]);
+            fprintf(fp,"%6.2g",data[i][j].r);
         }
-        fprintf(fp,”\n”);
+        fprintf(fp,"\n");
     }
+
+    fclose(fp);
 }
 
 int main(){
@@ -135,18 +137,19 @@ int main(){
 
     char fileName1[15] = "sample/1_im1";
     char fileName2[15] = "sample/1_im2";
+    char fileName3[15] = "out_test";
 
     getData(fileName1, data1);
     getData(fileName2, data2);
 
     fft2d(data1, 1);
-    fft2d(data1, 1);
+    fft2d(data2, 1);
 
     mmpoint(data1, data2, data3);
 
     fft2d(data3, -1);
 
-
+    printfile(fileName3, data3);
 
     return 0;
 }
