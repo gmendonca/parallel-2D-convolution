@@ -260,16 +260,15 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
             //printf("%d reading data2\n", my_rank);
-            MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
         }
     }else{
-
         //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+        MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
         //printf("source sending data2 to %d\n", dest);
-        MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+        MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 
     }
 
