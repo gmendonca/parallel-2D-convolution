@@ -167,16 +167,13 @@ int main(int argc, char **argv){
     int my_rank, p, source = 0, dest;
 
     complex data1[N][N], data2[N][N], data3[N][N];
-    complex *vec;
+    complex *vec, *vec2;
 
     char fileName1[15] = "sample/1_im1";
     char fileName2[15] = "sample/1_im2";
-    char fileName3[15] = "out_test";
+    char fileName3[15] = "mpi_out_test";
 
-    MPI_Datatype COMPLEX_STRUCT;
-    int          blocklens[2];
-    MPI_Aint     indices[2];
-    MPI_Datatype old_types[2];
+    MPI_Status status;
 
     MPI_Init(&argc, &argv);
 
@@ -184,22 +181,10 @@ int main(int argc, char **argv){
 
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
-    /* One value of each type */
-    blocklens[0] = N;
-    blocklens[1] = N;
-    /* The base types */
-    old_types[0] = MPI_FLOAT;
-    old_types[1] = MPI_FLOAT;
-    /* The locations of each element */
-    MPI_Address( &complex.r, &indices[0] );
-    MPI_Address( &complex.i, &indices[1] );
-    /* Make relative */
-    indices[1] = indices[1] - indices[0];
-    indices[0] = 0;
-    MPI_Type_struct( 2, blocklens, indices, old_types, &mystruct );
-    MPI_Type_commit( &COMPLEX_STRUCT );
 
     int i,j;
+
+    double startTime, stopTime;
 
     //Starting and send rows of data1, data2
 
@@ -214,16 +199,16 @@ int main(int argc, char **argv){
         for(i=0;i<N;i++){
             dest = i%p;
             if(dest != 0){
-                MPI_Send(&data1[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
-                MPI_Send(&data2[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
+                MPI_Send(&data1[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD);
+                MPI_Send(&data2[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD);
             }
         }
     }else{
         for(i=0;i<N;i++) {
             dest = i%p;
             if(dest == my_rank){
-                MPI_Recv(data1[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
-                MPI_Recv(data2[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
+                MPI_Recv(data1[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
             }
         }
     }
@@ -234,7 +219,7 @@ int main(int argc, char **argv){
 
     for (j=0;j<N;j++) {
         for (i=0;i<N;i+=p) {
-            vec = data1[i][j];
+            vec[i] = data1[i][j];
         }
         c_fft1d(vec, N, -1);
         for (i=0;i<N;i+=p) {
@@ -261,12 +246,11 @@ int main(int argc, char **argv){
     //Receving rows of data1, data2
 
     if(my_rank == 0){
-
         for(i=0;i<N;i++){
             dest = i%p;
             if(dest != 0){
-                MPI_Recv(data1[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
-                MPI_Recv(data2[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
+                MPI_Recv(data1[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
 
             }
         }
@@ -274,12 +258,95 @@ int main(int argc, char **argv){
         for(i = 0; i < N; i++) {
             dest = i%p;
             if(dest == my_rank){
-                MPI_Send(data1[i], N, COMPLEX_STRUCT, source, i, MPI_COMM_WORLD);
-                MPI_Send(data2[i], N, COMPLEX_STRUCT, source, i, MPI_COMM_WORLD);
+                MPI_Send(data1[i], N, MPI_FLOAT, source, i, MPI_COMM_WORLD);
+                MPI_Send(data2[i], N, MPI_FLOAT, source, i, MPI_COMM_WORLD);
             }
         }
     }
 
+    //Starting and send columns of data1, data2
+
+    if(my_rank == 0){
+        for(i=0;i<N;i++){
+            dest = i%p;
+            if(dest != 0){
+                for (j=0;j<N;j++) {
+                   vec[j] = data1[i][j];
+                }
+                MPI_Send(&vec, N, MPI_FLOAT, dest, i, MPI_COMM_WORLD);
+                for (j=0;j<N;j++) {
+                   vec[j] = data2[i][j];
+                }
+                MPI_Send(&vec, N, MPI_FLOAT, dest, i, MPI_COMM_WORLD);
+            }
+        }
+    }else{
+        for(i=0;i<N;i++) {
+            dest = i%p;
+            if(dest == my_rank){
+                MPI_Recv(data1[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+            }
+        }
+    }
+
+    //Doing fft1d forward for data1 and data2 columns
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (j=0;j<N;j++) {
+        for (i=0;i<N;i+=p) {
+            vec[i] = data1[i][j];
+        }
+        c_fft1d(vec, N, -1);
+        for (i=0;i<N;i+=p) {
+            data1[i][j] = vec[i];
+        }
+    }
+
+    free(vec);
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (j=0;j<N;j++) {
+        for (i=0;i<N;i+=p) {
+            vec[i] = data2[i][j];
+        }
+        c_fft1d(vec, N, -1);
+        for (i=0;i<N;i+=p) {
+            data2[i][j] = vec[i];
+        }
+    }
+
+    free(vec);
+
+    //Receving columns of data1, data2
+
+    if(my_rank == 0){
+        for(i=0;i<N;i++){
+            dest = i%p;
+            if(dest != 0){
+                MPI_Recv(vec, N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+                for (j=0;j<N;j++) {
+                   data1[i][j] = vec[j];
+                }
+                MPI_Recv(vec, N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+                for (j=0;j<N;j++) {
+                   data1[i][j] = vec[j];
+                }
+            }
+        }
+    }else{
+        for(i = 0; i < N; i++) {
+            dest = i%p;
+            if(dest == my_rank){
+                MPI_Send(&data1[i], N, MPI_FLOAT, source, i, MPI_COMM_WORLD);
+                MPI_Send(&data2[i], N, MPI_FLOAT, source, i, MPI_COMM_WORLD);
+            }
+        }
+    }
+
+    //Matrix Mulitplication
     if(my_rank == 0)
         mmpoint(data1, data2, data3);
 
@@ -288,14 +355,14 @@ int main(int argc, char **argv){
         for(i=0;i<N;i++){
             dest = i%p;
             if(dest != 0){
-                MPI_Send(&data3[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
+                MPI_Send(&data3[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD);
             }
         }
     }else{
         for(i=0;i<N;i++) {
             dest = i%p;
             if(dest == my_rank){
-                MPI_Recv(data3[i], N, COMPLEX_STRUCT, dest, i, MPI_COMM_WORLD);
+                MPI_Recv(data3[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
             }
         }
     }
@@ -304,7 +371,7 @@ int main(int argc, char **argv){
 
     for (j=0;j<N;j++) {
         for (i=0;i<N;i+=p) {
-            vec = data3[i][j];
+            vec[i] = data3[i][j];
         }
         c_fft1d(vec, N, 1);
         for (i=0;i<N;i+=p) {
@@ -313,6 +380,38 @@ int main(int argc, char **argv){
     }
 
     free(vec);
+
+    if(my_rank == 0){
+        for(i=0;i<N;i++){
+            dest = i%p;
+            if(dest != 0){
+                MPI_Recv(data3[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD, &status);
+            }
+        }
+
+        /* Stop Clock */
+        stopTime = MPI_Wtime();
+
+        printf("\nElapsed time = %lf s.\n",(stopTime - startTime));
+        printf("--------------------------------------------\n");
+    }else{
+        for(i=0;i<N;i++) {
+            dest = i%p;
+            if(dest == my_rank){
+                MPI_Send(&data3[i], N, MPI_FLOAT, dest, i, MPI_COMM_WORLD);
+            }
+        }
+    }
+
+
+
+    MPI_Finalize();
+
+    /* Stop Clock */
+    stopTime = MPI_Wtime();
+
+    printf("\nElapsed time = %lf s.\n",(stopTime - startTime));
+    printf("--------------------------------------------\n");
 
     printfile(fileName3, data3);
 
