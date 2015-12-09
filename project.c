@@ -96,35 +96,7 @@ void getData(char fileName[15], complex data[N][N]){
     fclose(fp);
 }
 
-void fft2d(complex data[N][N], complex transpose[N][N], int isign){
-
-    int i, j;
-
-    for(i=0;i<N;i++){
-        c_fft1d(data[i], N, isign);
-    }
-
-    //transpose
-    for(i=0;i<N;i++){
-        for(j=0;j<N;j++){
-            transpose[j][i] = data[i][j];
-        }
-    }
-
-    for(i=0;i<N;i++){
-        c_fft1d(data[i], N, isign);
-    }
-
-    //transpose back
-    for(i=0;i<N;i++){
-        for(j=0;j<N;j++){
-            data[j][i] = transpose[i][j];
-        }
-    }
-
-}
-
-void fft2d_new(complex data[N][N], int isign){
+void fft2d(complex data[N][N], int isign){
 
     int i, j;
 
@@ -155,6 +127,8 @@ void fft2d_new(complex data[N][N], int isign){
          data[i][j] = vec[j];
       }
    }
+
+   free(vec);
 }
 
 void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
@@ -176,7 +150,7 @@ void printfile(char fileName[15], complex data[N][N]){
 
     for (i=0;i<N;i++) {
         for (j=0;j<N;j++){
-            fprintf(fp,"%6.2f",data[i][j].r);
+            fprintf(fp,"%e ",data[i][j].r);
         }
         fprintf(fp,"\n");
     }
@@ -187,19 +161,19 @@ void printfile(char fileName[15], complex data[N][N]){
 int main(){
     complex data1[N][N], data2[N][N], data3[N][N];
 
-    char fileName1[15] = "sample/1_im1";
-    char fileName2[15] = "sample/1_im2";
-    char fileName3[15] = "out_test";
+    char fileName1[15] = "sample/2_im1";
+    char fileName2[15] = "sample/2_im2";
+    char fileName3[15] = "out_test2";
 
     getData(fileName1, data1);
     getData(fileName2, data2);
 
-    fft2d(data1, data3, 1);
-    fft2d(data2, data3, 1);
+    fft2d(data1, -1);
+    fft2d(data2, -1);
 
     mmpoint(data1, data2, data3);
 
-    fft2d(data3, data1, -1);
+    fft2d(data3, 1);
 
     printfile(fileName3, data3);
 
