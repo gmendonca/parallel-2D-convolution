@@ -153,7 +153,11 @@ void printfile(char fileName[15], complex data[N][N]){
 }
 
 int main(){
-    complex data1[N][N], data2[N][N], data3[N][N];
+    complex** data1, data2, data3;
+
+    data1 = (complex**)malloc(sizeof(complex)*n*n);
+    data2 = (complex**)malloc(sizeof(complex)*n*n);
+    data3 = (complex**)malloc(sizeof(complex)*n*n);
 
     char fileName1[15] = "sample/1_im1";
     char fileName2[15] = "sample/1_im2";
@@ -170,6 +174,10 @@ int main(){
     fft2d(data3, data1, -1);
 
     printfile(fileName3, data3);
+
+    free(data1);
+    free(data2);
+    free(data3);
 
     return 0;
 }
