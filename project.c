@@ -88,7 +88,7 @@ void getData(char fileName[15], complex data[N][N]){
 
     for (i=0;i<N;i++){
         for (j=0;j<N;j++){
-            fscanf(fp,"%f",&data[i][j].r);
+            fscanf(fp,"%g",&data[i][j].r);
             data[i][j].i = 0.00;
         }
     }
@@ -135,9 +135,12 @@ void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
 
     int i, j;
 
+    float real, imag;
+
     for(i=0;i<N;i++){
         for(j=0;j<N;j++){
-            data3[i][j].r = data1[i][j].r * data2[i][j].r;
+            data3[i][j].r = (data1[i][j].r * data2[i][j].r) - (data1[i][j].i * data2[i][j].i);
+            data3[i][j].i = (data1[i][j].r * data2[i][j].i) + (data1[i][j].i * data2[i][j].r);
         }
     }
 }
@@ -150,7 +153,7 @@ void printfile(char fileName[15], complex data[N][N]){
 
     for (i=0;i<N;i++) {
         for (j=0;j<N;j++){
-            fprintf(fp,"%e ",data[i][j].r);
+            fprintf(fp,"   %.7e",data[i][j].r);
         }
         fprintf(fp,"\n");
     }
@@ -161,9 +164,9 @@ void printfile(char fileName[15], complex data[N][N]){
 int main(){
     complex data1[N][N], data2[N][N], data3[N][N];
 
-    char fileName1[15] = "sample/2_im1";
-    char fileName2[15] = "sample/2_im2";
-    char fileName3[15] = "out_test2";
+    char fileName1[15] = "sample/1_im1";
+    char fileName2[15] = "sample/1_im2";
+    char fileName3[15] = "out_test";
 
     getData(fileName1, data1);
     getData(fileName2, data2);
