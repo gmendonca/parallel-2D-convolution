@@ -163,11 +163,17 @@ int main(){
     char fileName2[15] = "sample/1_im2";
     char fileName3[15] = "out_test";
 
+    printf("1\n");
+
     getData(fileName1, data1);
     getData(fileName2, data2);
 
+    printf("2\n");
+
     fft2d(data1, data3, 1);
     fft2d(data2, data3, 1);
+
+    printf("3\n");
 
     mmpoint(data1, data2, data3);
 
