@@ -96,11 +96,9 @@ void getData(char fileName[15], complex data[N][N]){
     fclose(fp);
 }
 
-void fft2d(complex data[N][N], int isign){
+void fft2d(complex data[N][N], complex transpose[N][N], int isign){
 
     int i, j;
-
-    complex transpose[N][N];
 
     for(i=0;i<N;i++){
         c_fft1d(data[i], N, isign);
@@ -114,7 +112,7 @@ void fft2d(complex data[N][N], int isign){
     }
 
     for(i=0;i<N;i++){
-        c_fft1d(transpose[i], N, isign);
+        c_fft1d(data[i], N, isign);
     }
 
     //transpose back
@@ -123,6 +121,7 @@ void fft2d(complex data[N][N], int isign){
             data[j][i] = transpose[i][j];
         }
     }
+
 
 }
 
@@ -163,12 +162,12 @@ int main(){
     getData(fileName1, data1);
     getData(fileName2, data2);
 
-    fft2d(data1, 1);
-    fft2d(data2, 1);
+    fft2d(data1, data3, 1);
+    fft2d(data2, data3, 1);
 
     mmpoint(data1, data2, data3);
 
-    fft2d(data3, -1);
+    fft2d(data3, data1, -1);
 
     printfile(fileName3, data3);
 
