@@ -81,7 +81,7 @@ void c_fft1d(complex *r, int n, int isign)
    }
 }
 
-void getData(char fileName[15], complex data[N][N]){
+void getData(char fileName[15], complex** data){
     FILE *fp = fopen(fileName, "r");
 
     int i, j;
@@ -96,7 +96,7 @@ void getData(char fileName[15], complex data[N][N]){
     fclose(fp);
 }
 
-void fft2d(complex data[N][N], complex transpose[N][N], int isign){
+void fft2d(complex** data, complex** transpose, int isign){
 
     int i, j;
 
@@ -125,7 +125,7 @@ void fft2d(complex data[N][N], complex transpose[N][N], int isign){
 
 }
 
-void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
+void mmpoint(complex** data1, complex** data2, complex** data3){
 
     int i, j;
 
@@ -136,7 +136,7 @@ void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
     }
 }
 
-void printfile(char fileName[15], complex data[N][N]){
+void printfile(char fileName[15], complex** data){
 
     FILE *fp = fopen(fileName, "w");
 
@@ -153,11 +153,11 @@ void printfile(char fileName[15], complex data[N][N]){
 }
 
 int main(){
-    complex** data1, data2, data3;
+    complex **data1, **data2, **data3;
 
-    data1 = (complex**)malloc(sizeof(complex)*n*n);
-    data2 = (complex**)malloc(sizeof(complex)*n*n);
-    data3 = (complex**)malloc(sizeof(complex)*n*n);
+    data1 = (complex**)malloc(sizeof(complex)*N*N);
+    data2 = (complex**)malloc(sizeof(complex)*N*N);
+    data3 = (complex**)malloc(sizeof(complex)*N*N);
 
     char fileName1[15] = "sample/1_im1";
     char fileName2[15] = "sample/1_im2";
