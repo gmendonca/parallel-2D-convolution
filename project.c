@@ -88,7 +88,7 @@ void getData(char fileName[15], complex data[N][N]){
 
     for (i=0;i<N;i++){
         for (j=0;j<N;j++){
-            fscanf(fp,"%g",&data[i][j].r);
+            fscanf(fp,"%f",&data[i][j].r);
             data[i][j].i = 0.00;
         }
     }
@@ -144,7 +144,7 @@ void printfile(char fileName[15], complex data[N][N]){
 
     for (i=0;i<N;i++) {
         for (j=0;j<N;j++){
-            fprintf(fp,"%6.2g",data[i][j].r);
+            fprintf(fp,"%6.2f",data[i][j].r);
         }
         fprintf(fp,"\n");
     }
