@@ -133,6 +133,14 @@ void fft2d(complex data[N][N], int isign){
     free(vec);
 }
 
+void transpose(complex data[N][N], complex transpose[N][N]){
+    int i, j;
+    for (i = 0; i < N; i++)
+      for(j = 0 ; j < N ; j++)
+         transpose[j][i] = data[i][j];
+    data = transpose;
+}
+
 void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
 
     int i, j;
@@ -169,9 +177,9 @@ int main(int argc, char **argv){
     complex data1[N][N], data2[N][N], data3[N][N];
     complex *vec, *vec2;
 
-    char fileName1[15] = "sample/1_im1";
-    char fileName2[15] = "sample/1_im2";
-    char fileName3[15] = "mpi_out_test";
+    char fileName1[15] = "sample/2_im1";
+    char fileName2[15] = "sample/2_im2";
+    char fileName3[15] = "mpi_out_test2";
 
     MPI_Status status;
 
@@ -226,13 +234,83 @@ int main(int argc, char **argv){
 
     vec = (complex *)malloc(N * sizeof(complex));
 
-    for (j=0;j<N;j++) {
-        for (i=lb;i<hb;i++) {
-            vec[i] = data1[i][j];
+    for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
+            vec[j] = data1[i][j];
         }
         c_fft1d(vec, N, -1);
-        for (i=lb;i<hb;i++) {
-            data1[i][j] = vec[i];
+        for (j=0;j<N;j++) {
+            data1[i][j] = vec[j];
+        }
+    }
+
+    free(vec);
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
+            vec[j] = data1[i][j];
+        }
+        c_fft1d(vec, N, -1);
+        for (j=0;j<N;j++) {
+            data1[i][j] = vec[j];
+        }
+    }
+
+    free(vec);
+
+
+    //Receving rows of data1, data2
+
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            //printf("%d reading data1\n", my_rank);
+            MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            //printf("%d reading data2\n", my_rank);
+            MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+        }
+    }else{
+        //printf("source sending data1 to %d\n", dest);
+        MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        //printf("source sending data2 to %d\n", dest);
+        MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+
+    }
+
+    //Starting and send columns of data1, data2
+
+    if(my_rank == 0){
+        transpose(data1, data3);
+        transpose(data2, data3);
+
+        for(i=1;i<p;i++){
+            offset=i*rows;
+                //printf("source sending data1 to %d\n", dest);
+                MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                //printf("source sending data2 to %d\n", dest);
+                MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+        }
+    }else{
+        //printf("%d reading data1\n", my_rank);
+        MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        //printf("%d reading data2\n", my_rank);
+        MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+
+    }
+
+    //Doing fft1d forward for data1 and data2 columns
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
+            vec[j] = data1[i][j];
+        }
+        c_fft1d(vec, N, -1);
+        for (j=0;j<N;j++) {
+            data1[i][j] = vec[j];
         }
     }
 
@@ -252,9 +330,7 @@ int main(int argc, char **argv){
 
     free(vec);
 
-    //Receving rows of data1, data2
-
-    tag = 125;
+    //Receving columns of data1, data2
 
     if(my_rank == 0){
         for(i=1;i<p;i++){
@@ -272,19 +348,115 @@ int main(int argc, char **argv){
 
     }
 
+
+    if(my_rank == 0){
+        transpose(data1, data3);
+        transpose(data2, data3);
+        mmpoint(data1, data2, data3);
+    }
+
+    //Starting and send rows of data1, data2
+
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+                //printf("source sending data1 to %d\n", dest);
+                MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+        }
+    }else{
+        //printf("%d reading data1\n", my_rank);
+        MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+
+    }
+
+    //Doing fft1d forward for data1 and data2 rows
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
+            vec[j] = data1[i][j];
+        }
+        c_fft1d(vec, N, 1);
+        for (j=0;j<N;j++) {
+            data1[i][j] = vec[j];
+        }
+    }
+
+    free(vec);
+
+
+    //Receving rows of data1, data2
+
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            //printf("%d reading data1\n", my_rank);
+            MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+        }
+    }else{
+        //printf("source sending data1 to %d\n", dest);
+        MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+
+    }
+
+    //Starting and send columns of data1, data2
+
+    if(my_rank == 0){
+        transpose(data3, data1);
+
+        for(i=1;i<p;i++){
+            offset=i*rows;
+                //printf("source sending data1 to %d\n", dest);
+                MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+        }
+    }else{
+        //printf("%d reading data1\n", my_rank);
+        MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+
+    }
+
+    //Doing fft1d forward for data1 and data2 columns
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
+            vec[j] = data1[i][j];
+        }
+        c_fft1d(vec, N, 1);
+        for (j=0;j<N;j++) {
+            data1[i][j] = vec[j];
+        }
+    }
+
+    free(vec);
+
+    //Receving columns of data1, data2
+
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+        }
+    }else{
+        MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+
+    }
+
+    if(my_rank == 0){
     /* Stop Clock */
     stopTime = MPI_Wtime();
 
     printf("\nElapsed time = %lf s.\n",(stopTime - startTime));
     printf("--------------------------------------------\n");
+    }
 
 
 
     MPI_Finalize();
 
-
-
-    //printfile(fileName3, data3);
+    printfile(fileName3, data3);
 
     return 0;
 }
