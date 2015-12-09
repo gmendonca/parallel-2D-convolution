@@ -81,7 +81,7 @@ void c_fft1d(complex *r, int n, int isign)
    }
 }
 
-void getData(char fileName[15], complex** data){
+void getData(char fileName[15], complex data[N][N]){
     FILE *fp = fopen(fileName, "r");
 
     int i, j;
@@ -96,7 +96,7 @@ void getData(char fileName[15], complex** data){
     fclose(fp);
 }
 
-void fft2d(complex** data, complex** transpose, int isign){
+void fft2d(complex data[N][N], complex transpose[N][N], int isign){
 
     int i, j;
 
@@ -122,10 +122,42 @@ void fft2d(complex** data, complex** transpose, int isign){
         }
     }
 
-
 }
 
-void mmpoint(complex** data1, complex** data2, complex** data3){
+void fft2d_new(complex data[N][N], int isign){
+
+    int i, j;
+
+    complex* vec;
+
+    vec = (complex *)malloc(N * sizeof(complex));
+
+    for (j=0;j<N;j++) {
+      for (i=0;i<N;i++) {
+         vec[i] = data[i][j];
+      }
+      c_fft1d(vec, N, isign);
+      for (i=0;i<N;i++) {
+         data[i][j] = vec[i];
+      }
+   }
+
+   free(vec);
+
+   vec = (complex *)malloc(N * sizeof(complex));
+
+   for (i=0;i<N;i++) {
+      for (j=0;j<N;j++) {
+         vec[j] = data[i][j];
+      }
+      c_fft1d(vec, N, isign);
+      for (j=0;j<N;j++) {
+         data[i][j] = vec[j];
+      }
+   }
+}
+
+void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
 
     int i, j;
 
@@ -136,7 +168,7 @@ void mmpoint(complex** data1, complex** data2, complex** data3){
     }
 }
 
-void printfile(char fileName[15], complex** data){
+void printfile(char fileName[15], complex data[N][N]){
 
     FILE *fp = fopen(fileName, "w");
 
@@ -153,37 +185,23 @@ void printfile(char fileName[15], complex** data){
 }
 
 int main(){
-    complex **data1, **data2, **data3;
-
-    data1 = (complex**)malloc(sizeof(complex)*N*N);
-    data2 = (complex**)malloc(sizeof(complex)*N*N);
-    data3 = (complex**)malloc(sizeof(complex)*N*N);
+    complex data1[N][N], data2[N][N], data3[N][N];
 
     char fileName1[15] = "sample/1_im1";
     char fileName2[15] = "sample/1_im2";
     char fileName3[15] = "out_test";
 
-    printf("1\n");
-
     getData(fileName1, data1);
     getData(fileName2, data2);
 
-    printf("2\n");
-
     fft2d(data1, data3, 1);
     fft2d(data2, data3, 1);
-
-    printf("3\n");
 
     mmpoint(data1, data2, data3);
 
     fft2d(data3, data1, -1);
 
     printfile(fileName3, data3);
-
-    free(data1);
-    free(data2);
-    free(data3);
 
     return 0;
 }
