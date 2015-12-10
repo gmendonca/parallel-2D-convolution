@@ -1,7 +1,7 @@
 MPICC:=mpicc
 CC:=gcc
 
-program: test.c
+program: project.c project_transpose.c project_sr_mpi.c project_openmp_mpi.c project_bcast_mpi.c project_tasks_mpi.c
 
 	$(CC) project.c -o project.o
 
