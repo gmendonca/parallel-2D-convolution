@@ -184,8 +184,6 @@ int main(int argc, char **argv){
 
     int tag = 345;
 
-    printf("%d have lb = %d and hb = %d\n", my_rank, lb, hb);
-
     if(my_rank == 6){
         /* Start Clock */
         printf("\nStarting clock.\n");

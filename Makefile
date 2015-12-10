@@ -14,5 +14,9 @@ program: test.c
 
 	$(MPICC) -o project_bcast_mpi project_bcast_mpi.o
 
+	$(MPICC) -c project_tasks_mpi.c
+
+	$(MPICC) -o project_tasks_mpi project_tasks_mpi.o
+
 clean:
 	rm -rf *.o
