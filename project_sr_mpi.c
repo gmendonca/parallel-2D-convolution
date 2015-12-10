@@ -98,13 +98,11 @@ void getData(char fileName[15], complex **data){
     fclose(fp);
 }
 
-void transpose(complex **data){
+void transpose(complex **data, complex ** transp){
     int i, j;
-    for (i = 0; i < N; i++){
-      for(j = 0 ; j < N ; j++){
-         C_SWAP(data[j][i], data[i][j]);
-      }
-    }
+    for (i = 0; i < N; i++)
+      for(j = 0 ; j < N ; j++)
+         transp[j][i] = data[i][j];
 }
 
 void mmpoint(complex **data1, complex **data2, complex **data3){
@@ -140,20 +138,22 @@ void printfile(char fileName[15], complex **data){
 int main(int argc, char **argv){
     int my_rank, p, source = 0, dest;
 
-    complex **data1, **data2, **data3;
+    complex **data1, **data2, **data3, **data4;
     data1 = malloc(N * sizeof(complex *));
     data2 = malloc(N * sizeof(complex *));
     data3 = malloc(N * sizeof(complex *));
+    data4 = malloc(N * sizeof(complex *));
     for(int x = 0; x < N; x++){
         data1[x] = malloc(N * sizeof(complex *));
         data2[x] = malloc(N * sizeof(complex *));
         data3[x] = malloc(N * sizeof(complex *));
+        data4[x] = malloc(N * sizeof(complex *));
     }
     complex *vec;
 
-    char fileName1[15] = "sample/1_im1";
-    char fileName2[15] = "sample/1_im2";
-    char fileName3[15] = "mpi_out_test";
+    char fileName1[15] = "sample/2_im1";
+    char fileName2[15] = "sample/2_im2";
+    char fileName3[15] = "mpi_out_test2";
 
     MPI_Status status;
 
@@ -268,20 +268,20 @@ int main(int argc, char **argv){
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
-        transpose(data1);
-        transpose(data2);
+        transpose(data1, data3);
+        transpose(data2, data4);
 
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Send(&data1[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
-                MPI_Send(&data2[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data3[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data4[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
-            MPI_Recv(data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data3[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data4[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
 
     }
@@ -292,13 +292,11 @@ int main(int argc, char **argv){
 
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
-            vec[j] = data1[i][j];
-            if (vec[j].r != vec[j].r) printf("here5");
+            vec[j] = data3[i][j];
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
-            data1[i][j] = vec[j];
-            if (vec[j].r != vec[j].r) printf("here6");
+            data3[i][j] = vec[j];
         }
     }
 
@@ -308,12 +306,11 @@ int main(int argc, char **argv){
 
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
-            vec[j] = data2[i][j];
+            vec[j] = data4[i][j];
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
-            data2[i][j] = vec[j];
-            if (vec[j].r != vec[j].r) printf("here8");
+            data4[i][j] = vec[j];
         }
     }
 
@@ -325,21 +322,21 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Recv(data1[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
-                MPI_Recv(data2[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data3[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data4[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data1[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
-            MPI_Send(&data2[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data3[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data4[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
     }
 
 
     if(my_rank == 0){
-        transpose(data1);
-        transpose(data2);
+        transpose(data3,data1);
+        transpose(data4,data2);
         mmpoint(data1, data2, data3);
     }
 
@@ -397,17 +394,17 @@ int main(int argc, char **argv){
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
-        transpose(data3);
+        transpose(data3,data4);
 
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Send(&data3[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data4[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Recv(data3[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data4[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
 
     }
@@ -418,11 +415,11 @@ int main(int argc, char **argv){
 
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
-            vec[j] = data3[i][j];
+            vec[j] = data4[i][j];
         }
         c_fft1d(vec, N, 1);
         for (j=0;j<N;j++) {
-            data3[i][j] = vec[j];
+            data4[i][j] = vec[j];
         }
     }
 
@@ -434,18 +431,18 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Recv(data3[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data4[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data3[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data4[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
 
     }
 
     if(my_rank == 0){
-        transpose(data3);
+        transpose(data4,data3);
         /* Stop Clock */
         stopTime = MPI_Wtime();
 
