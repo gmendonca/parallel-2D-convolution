@@ -3,9 +3,9 @@ CC:=gcc
 
 program: project.c project_transpose.c project_sr_mpi.c project_openmp_mpi.c project_bcast_mpi.c project_tasks_mpi.c
 
-	$(CC) project.c -o project.o
+	$(CC) project.c -o project.o -lm
 
-	$(CC) project_transpose.c -o project_transpose.o
+	$(CC) project_transpose.c -o project_transpose.o -lm
 
 	$(MPICC) -c project_sr_mpi.c
 
