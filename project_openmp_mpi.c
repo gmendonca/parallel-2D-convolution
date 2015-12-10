@@ -137,14 +137,14 @@ void printfile(char fileName[15], complex **data){
 }
 
 int main(int argc, char **argv){
-    int my_rank, p, source = 0, dest;
+    int my_rank, p, source = 0, dest, x;
 
     complex **data1, **data2, **data3, **data4;
     data1 = malloc(N * sizeof(complex *));
     data2 = malloc(N * sizeof(complex *));
     data3 = malloc(N * sizeof(complex *));
     data4 = malloc(N * sizeof(complex *));
-    for(int x = 0; x < N; x++){
+    for(x = 0; x < N; x++){
         data1[x] = malloc(N * sizeof(complex *));
         data2[x] = malloc(N * sizeof(complex *));
         data3[x] = malloc(N * sizeof(complex *));
