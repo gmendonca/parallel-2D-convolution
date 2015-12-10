@@ -31,7 +31,7 @@ $ make
 
 To clean:
 ```bash
-make clean
+$ make clean
 ```
 
 ## Running
