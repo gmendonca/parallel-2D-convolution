@@ -3,7 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
 #include <sys/types.h>
 #include <sys/times.h>
 #include <sys/time.h>
@@ -91,11 +90,11 @@ void c_fft1d(complex *r, int n, int isign)
 void getData(char fileName[15], complex data[N][N]){
     FILE *fp = fopen(fileName, "r");
 
-    int i, j;
+    int i, j, result;
 
     for (i=0;i<N;i++){
         for (j=0;j<N;j++){
-            fscanf(fp,"%g",&data[i][j].r);
+            result = fscanf(fp,"%g",&data[i][j].r);
             data[i][j].i = 0.00;
         }
     }
