@@ -135,25 +135,49 @@ void printfile(char fileName[15], complex **data){
     fclose(fp);
 }
 
+int malloc2dfloat(complex ***array, int n, int m) {
+
+    /* allocate the n*m contiguous items */
+    complex *p = (complex *)malloc(n*m*sizeof(complex));
+    if (!p) return -1;
+
+    /* allocate the row pointers into the memory */
+    (*array) = (complex **)malloc(n*sizeof(complex*));
+    if (!(*array)) {
+       free(p);
+       return -1;
+    }
+
+    /* set up the pointers into the contiguous memory */
+    for (int i=0; i<n; i++)
+       (*array)[i] = &(p[i*m]);
+
+    return 0;
+}
+
+int free2dfloat(complex ***array) {
+    /* free the memory - the first element of the array is at the start */
+    free(&((*array)[0][0]));
+
+    /* free the pointers into the memory */
+    free(*array);
+
+    return 0;
+}
+
 int main(int argc, char **argv){
     int my_rank, p, source = 0, dest;
 
     complex **data1, **data2, **data3, **data4;
-    data1 = malloc(N * sizeof(complex *));
-    data2 = malloc(N * sizeof(complex *));
-    data3 = malloc(N * sizeof(complex *));
-    data4 = malloc(N * sizeof(complex *));
-    for(int x = 0; x < N; x++){
-        data1[x] = malloc(N * sizeof(complex *));
-        data2[x] = malloc(N * sizeof(complex *));
-        data3[x] = malloc(N * sizeof(complex *));
-        data4[x] = malloc(N * sizeof(complex *));
-    }
+    malloc2dfloat(&data1, N, N);
+    malloc2dfloat(&data2, N, N);
+    malloc2dfloat(&data3, N, N);
+    malloc2dfloat(&data4, N, N);
     complex *vec;
 
-    char fileName1[15] = "sample/2_im1";
-    char fileName2[15] = "sample/2_im2";
-    char fileName3[15] = "mpi_out_test2";
+    char fileName1[15] = "sample/1_im1";
+    char fileName2[15] = "sample/1_im2";
+    char fileName3[15] = "mpi_out_test";
 
     MPI_Status status;
 
@@ -193,7 +217,6 @@ int main(int argc, char **argv){
 
     //Starting and send rows of data1, data2
 
-
     if(my_rank == 0){
         getData(fileName1, data1);
         getData(fileName2, data2);
@@ -215,6 +238,7 @@ int main(int argc, char **argv){
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
         }
+        printf("vec[%d] = %f\n", i, vec[511].r);
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
@@ -239,18 +263,42 @@ int main(int argc, char **argv){
 
     //Receving rows of data1, data2
 
-    MPI_Bcast(&data1[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
-    MPI_Bcast(&data2[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data1[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+            }
+        }
+    }else{
+
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data1[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data2[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+        }
+    }
 
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
         transpose(data1, data3);
         transpose(data2, data4);
-    }
 
-    MPI_Bcast(&data3[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
-    MPI_Bcast(&data4[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Send(&data3[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data4[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+            }
+        }
+    }else{
+        for(j = lb; j < hb; j++){
+            MPI_Recv(data3[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data4[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+        }
+
+    }
 
     //Doing fft1d forward for data1 and data2 columns
 
@@ -284,8 +332,20 @@ int main(int argc, char **argv){
 
     //Receving columns of data1, data2
 
-    MPI_Bcast(&data3[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
-    MPI_Bcast(&data4[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data3[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data4[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+            }
+        }
+    }else{
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data3[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data4[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+        }
+    }
 
 
     if(my_rank == 0){
@@ -296,7 +356,7 @@ int main(int argc, char **argv){
 
     //Starting and send rows of data1, data2
 
-    MPI_Bcast(&data3[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+    MPI_Bcast(&(data3[0][0]),N*N,mystruct,0,MPI_COMM_WORLD);
 
     //Doing fft1d forward for data1 and data2 rows
 
@@ -315,18 +375,39 @@ int main(int argc, char **argv){
 
     free(vec);
 
-
     //Receving rows of data1, data2
 
-    MPI_Bcast(&data3[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data3[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+            }
+        }
+    }else{
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data3[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+        }
+
+    }
 
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
         transpose(data3,data4);
-    }
 
-    MPI_Bcast(&data4[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Send(&data4[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+            }
+        }
+    }else{
+        for(j = lb; j < hb; j++){
+            MPI_Recv(data4[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+        }
+
+    }
 
     //Doing fft1d forward for data1 and data2 columns
 
@@ -346,7 +427,19 @@ int main(int argc, char **argv){
 
     //Receving columns of data1, data2
 
-    MPI_Bcast(&data4[0][0],N*N,mystruct,0,MPI_COMM_WORLD);
+    if(my_rank == 0){
+        for(i=1;i<p;i++){
+            offset=i*rows;
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data4[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+            }
+        }
+    }else{
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data4[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+        }
+
+    }
 
     if(my_rank == 0){
         transpose(data4,data3);

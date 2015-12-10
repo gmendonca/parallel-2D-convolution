@@ -455,5 +455,10 @@ int main(int argc, char **argv){
         printfile(fileName3, data3);
     }
 
+    free(data1);
+    free(data2);
+    free(data3);
+    free(data4);
+
     return 0;
 }
