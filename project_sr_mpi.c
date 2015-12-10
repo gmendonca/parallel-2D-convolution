@@ -163,6 +163,16 @@ int main(int argc, char **argv){
 
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
+    /* Setup description of the 4 MPI_FLOAT fields x, y, z, velocity */
+    MPI_Datatype mystruct;
+    int          blocklens[2] = { 1, 1 };
+    MPI_Aint     indices[2] = { 0, sizeof(float) };
+    MPI_Datatype old_types[2] = { MPI_FLOAT, MPI_FLOAT };
+
+    /* Make relative */
+    MPI_Type_struct( 2, blocklens, indices, old_types, &mystruct );
+    MPI_Type_commit( &mystruct );
+
 
     int i,j;
 
@@ -195,15 +205,15 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Send(&data1[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
-                MPI_Send(&data2[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data1[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data2[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
             }
         }
     }else{
 
         for(j = lb; j < hb; j++){
-            MPI_Recv(data1[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
-            MPI_Recv(data2[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
     }
 
@@ -214,11 +224,12 @@ int main(int argc, char **argv){
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
+            if (vec[j].r != vec[j].r) printf("here");
         }
-        printf("vec[%d] = %f\n", vec[j].r);
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
+            if (vec[j].r != vec[j].r) printf("here2");
         }
     }
 
@@ -229,10 +240,12 @@ int main(int argc, char **argv){
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
             vec[j] = data2[i][j];
+            if (vec[j].r != vec[j].r) printf("here3");
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data2[i][j] = vec[j];
+            if (vec[j].r != vec[j].r) printf("here4");
         }
     }
 
@@ -244,35 +257,35 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Recv(data1[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
-                MPI_Recv(data2[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data1[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
             }
         }
     }else{
 
         for(j = lb; j < hb; j++){
-            MPI_Send(&data1[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-            MPI_Send(&data2[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data1[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data2[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
     }
 
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
-        //transpose(data1);
-        //transpose(data2);
+        transpose(data1);
+        transpose(data2);
 
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Send(&data1[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
-                MPI_Send(&data2[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data1[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data2[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Recv(data1[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
-            MPI_Recv(data2[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
 
     }
@@ -284,10 +297,12 @@ int main(int argc, char **argv){
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
+            if (vec[j].r != vec[j].r) printf("here5");
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
+            if (vec[j].r != vec[j].r) printf("here6");
         }
     }
 
@@ -295,13 +310,14 @@ int main(int argc, char **argv){
 
     vec = (complex *)malloc(N * sizeof(complex));
 
-    for (j=0;j<N;j++) {
-        for (i=lb;i<hb;i++) {
+    for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
             vec[j] = data2[i][j];
         }
         c_fft1d(vec, N, -1);
-        for (i=lb;i<hb;i++) {
+        for (j=0;j<N;j++) {
             data2[i][j] = vec[j];
+            if (vec[j].r != vec[j].r) printf("here8");
         }
     }
 
@@ -313,21 +329,21 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Recv(data1[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
-                MPI_Recv(data2[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data1[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data1[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-            MPI_Send(&data2[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data1[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data2[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
     }
 
 
     if(my_rank == 0){
-        //transpose(data1);
-        //transpose(data2);
+        transpose(data1);
+        transpose(data2);
         mmpoint(data1, data2, data3);
     }
 
@@ -337,13 +353,13 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Send(&data3[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data3[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
             }
         }
     }else{
 
         for(j = lb; j < hb; j++){
-            MPI_Recv(data3[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data3[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
 
     }
@@ -372,12 +388,12 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Recv(data3[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data3[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data3[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data3[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
 
     }
@@ -385,17 +401,17 @@ int main(int argc, char **argv){
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
-        //transpose(data3);
+        transpose(data3);
 
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Send(&data3[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data3[j][0], N, mystruct, i, tag, MPI_COMM_WORLD);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Recv(data3[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data3[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
 
     }
@@ -422,18 +438,18 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             for(j = offset; j < (offset+rows); j++){
-                MPI_Recv(data3[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data3[j], N, mystruct, i, tag, MPI_COMM_WORLD, &status);
             }
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data3[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data3[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
 
     }
 
     if(my_rank == 0){
-        //transpose(data3);
+        transpose(data3);
         /* Stop Clock */
         stopTime = MPI_Wtime();
 
