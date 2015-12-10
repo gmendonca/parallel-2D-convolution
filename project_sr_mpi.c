@@ -212,8 +212,8 @@ int main(int argc, char **argv){
     }else{
 
         for(j = lb; j < hb; j++){
-            MPI_Recv(&data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
-            MPI_Recv(&data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
     }
 
