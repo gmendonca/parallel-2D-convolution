@@ -366,7 +366,6 @@ int main(int argc, char **argv){
             vec[j] = data3[i][j];
         }
         c_fft1d(vec, N, 1);
-
         for (j=0;j<N;j++) {
             data3[i][j] = vec[j];
         }
@@ -436,7 +435,7 @@ int main(int argc, char **argv){
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data4[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data4[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
 
     }
@@ -452,7 +451,9 @@ int main(int argc, char **argv){
 
     MPI_Finalize();
 
-    printfile(fileName3, data3);
+    if(my_rank == 0){
+        printfile(fileName3, data3);
+    }
 
     return 0;
 }
