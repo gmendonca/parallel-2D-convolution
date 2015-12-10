@@ -163,6 +163,11 @@ int main(int argc, char **argv){
 
     MPI_Comm_size(MPI_COMM_WORLD, &p);
 
+    if(p != 8){
+        printf("This program should run with 8 processors!\n");
+        return 0;
+    }
+
     /* Setup description of the 4 MPI_FLOAT fields x, y, z, velocity */
     MPI_Datatype mystruct;
     int          blocklens[2] = { 1, 1 };
@@ -191,7 +196,6 @@ int main(int argc, char **argv){
     }
 
     //Starting and send rows of data1, data2
-
 
     if(my_rank == 0){
         getData(fileName1, data1);
@@ -258,12 +262,12 @@ int main(int argc, char **argv){
     //Receving the rows from data 1 and data2
     if(my_rank == 0){
         for(j = offset; j < N; j++)
-            MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data1[j], N, mystruct, 1, tag, MPI_COMM_WORLD, &status);
     }
 
     if(my_rank == 1){
         for(j = offset; j < N; j++)
-            MPI_Send(&data1[j][0], N, mystruct, 1, tag, MPI_COMM_WORLD);
+            MPI_Send(&data1[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
     }
 
     if(my_rank == 2){
@@ -346,12 +350,12 @@ int main(int argc, char **argv){
 
     if(my_rank == 0){
         for(j = offset; j < N; j++)
-            MPI_Recv(data3[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data3[j], N, mystruct, 1, tag, MPI_COMM_WORLD, &status);
     }
 
     if(my_rank == 1){
         for(j = offset; j < N; j++)
-            MPI_Send(&data3[j][0], N, mystruct, 1, tag, MPI_COMM_WORLD);
+            MPI_Send(&data3[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
     }
 
     if(my_rank == 2){
@@ -369,23 +373,23 @@ int main(int argc, char **argv){
     if(my_rank == 0){
         transpose(data3, data1);
 
-        for(j = offset; j < N; j++)
+        for(j = 0; j < N; j++)
             MPI_Send(&data1[j][0], N, mystruct, 4, tag, MPI_COMM_WORLD);
     }
 
     if(my_rank == 2){
         transpose(data4, data2);
 
-        for(j = offset; j < N; j++)
+        for(j = 0; j < N; j++)
             MPI_Send(&data2[j][0], N, mystruct, 4, tag, MPI_COMM_WORLD);
     }
 
 
     if(my_rank == 4){
-        for(j = offset; j < N; j++)
+        for(j = 0; j < N; j++)
             MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
 
-        for(j = offset; j < N; j++)
+        for(j = 0; j < N; j++)
             MPI_Recv(data2[j], N, mystruct, 2, tag, MPI_COMM_WORLD, &status);
 
         mmpoint(data1, data2, data3);
@@ -415,7 +419,7 @@ int main(int argc, char **argv){
             for (j=0;j<N;j++) {
                 vec[j] = data3[i][j];
             }
-            c_fft1d(vec, N, -1);
+            c_fft1d(vec, N, 1);
             for (j=0;j<N;j++) {
                 data3[i][j] = vec[j];
             }
@@ -444,12 +448,12 @@ int main(int argc, char **argv){
     if(my_rank == 4){
         transpose(data3, data4);
 
-        for(j = offset; j < N; j++)
+        for(j = 0; j < N; j++)
             MPI_Send(&data4[j][0], N, mystruct, 6, tag, MPI_COMM_WORLD);
     }
 
     if(my_rank == 6){
-        for(j = offset; j < N; j++)
+        for(j = 0; j < N; j++)
             MPI_Recv(data4[j], N, mystruct, 4, tag, MPI_COMM_WORLD, &status);
 
         for(j = offset; j < N; j++)
@@ -471,7 +475,7 @@ int main(int argc, char **argv){
             for (j=0;j<N;j++) {
                 vec[j] = data4[i][j];
             }
-            c_fft1d(vec, N, -1);
+            c_fft1d(vec, N, 1);
             for (j=0;j<N;j++) {
                 data4[i][j] = vec[j];
             }
