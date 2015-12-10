@@ -215,6 +215,7 @@ int main(int argc, char **argv){
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
         }
+        printf("vec[%d] = %f\n", vec[j].r);
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
