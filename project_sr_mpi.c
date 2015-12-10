@@ -83,7 +83,7 @@ void c_fft1d(complex *r, int n, int isign)
     }
 }
 
-void getData(char fileName[15], complex data[N][N]){
+void getData(char fileName[15], complex **data){
     FILE *fp = fopen(fileName, "r");
 
     int i, j;
@@ -98,7 +98,7 @@ void getData(char fileName[15], complex data[N][N]){
     fclose(fp);
 }
 
-void transpose(complex data[N][N]){
+void transpose(complex **data){
     int i, j;
     for (i = 0; i < N; i++){
       for(j = 0 ; j < N ; j++){
@@ -107,7 +107,7 @@ void transpose(complex data[N][N]){
     }
 }
 
-void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
+void mmpoint(complex **data1, complex **data2, complex **data3){
 
     int i, j;
 
@@ -121,7 +121,7 @@ void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
     }
 }
 
-void printfile(char fileName[15], complex data[N][N]){
+void printfile(char fileName[15], complex **data){
 
     FILE *fp = fopen(fileName, "w");
 
@@ -140,7 +140,15 @@ void printfile(char fileName[15], complex data[N][N]){
 int main(int argc, char **argv){
     int my_rank, p, source = 0, dest;
 
-    complex data1[N][N], data2[N][N], data3[N][N];
+    complex **data1, **data2, **data3;
+    data1 = malloc(N * sizeof(complex *));
+    data2 = malloc(N * sizeof(complex *));
+    data3 = malloc(N * sizeof(complex *));
+    for(int x = 0; x < N; x++){
+        data1[x] = malloc(N * sizeof(complex *));
+        data2[x] = malloc(N * sizeof(complex *));
+        data3[x] = malloc(N * sizeof(complex *));
+    }
     complex *vec;
 
     char fileName1[15] = "sample/1_im1";
@@ -175,6 +183,7 @@ int main(int argc, char **argv){
 
     //Starting and send rows of data1, data2
 
+
     if(my_rank == 0){
         getData(fileName1, data1);
         getData(fileName2, data2);
@@ -185,17 +194,17 @@ int main(int argc, char **argv){
 
         for(i=1;i<p;i++){
             offset=i*rows;
-                //printf("source sending data1 to %d\n", dest);
-                MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
-                //printf("source sending data2 to %d\n", dest);
-                MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Send(&data1[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data2[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            }
         }
     }else{
-        //printf("%d reading data1\n", my_rank);
-        MPI_Recv(data1[lb], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
-        //printf("%d reading data2\n", my_rank);
-        MPI_Recv(data2[lb], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
 
+        for(j = lb; j < hb; j++){
+            MPI_Recv(data1[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data2[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        }
     }
 
     //Doing fft1d forward for data1 and data2 rows
@@ -206,7 +215,6 @@ int main(int argc, char **argv){
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
         }
-        printf("vec1[%d] = %f\n",i, vec[0].r);
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
@@ -228,7 +236,6 @@ int main(int argc, char **argv){
     }
 
     free(vec);
-
 
     //Receving rows of data1, data2
 
