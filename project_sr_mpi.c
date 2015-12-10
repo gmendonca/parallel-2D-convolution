@@ -98,47 +98,13 @@ void getData(char fileName[15], complex data[N][N]){
     fclose(fp);
 }
 
-void fft2d(complex data[N][N], int isign){
-
+void transpose(complex data[N][N]){
     int i, j;
-
-    complex* vec;
-
-    vec = (complex *)malloc(N * sizeof(complex));
-
-    for (j=0;j<N;j++) {
-        for (i=0;i<N;i++) {
-            vec[i] = data[i][j];
-        }
-        c_fft1d(vec, N, isign);
-        for (i=0;i<N;i++) {
-            data[i][j] = vec[i];
-        }
+    for (i = 0; i < N; i++){
+      for(j = 0 ; j < N ; j++){
+         C_SWAP(data[j][i], data[i][j]);
+      }
     }
-
-    free(vec);
-
-    vec = (complex *)malloc(N * sizeof(complex));
-
-    for (i=0;i<N;i++) {
-        for (j=0;j<N;j++) {
-            vec[j] = data[i][j];
-        }
-        c_fft1d(vec, N, isign);
-        for (j=0;j<N;j++) {
-            data[i][j] = vec[j];
-        }
-    }
-
-    free(vec);
-}
-
-void transpose(complex data[N][N], complex transpose[N][N]){
-    int i, j;
-    for (i = 0; i < N; i++)
-      for(j = 0 ; j < N ; j++)
-         transpose[j][i] = data[i][j];
-    data = transpose;
 }
 
 void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
@@ -175,11 +141,11 @@ int main(int argc, char **argv){
     int my_rank, p, source = 0, dest;
 
     complex data1[N][N], data2[N][N], data3[N][N];
-    complex *vec, *vec2;
+    complex *vec;
 
-    char fileName1[15] = "sample/2_im1";
-    char fileName2[15] = "sample/2_im2";
-    char fileName3[15] = "mpi_out_test2";
+    char fileName1[15] = "sample/1_im1";
+    char fileName2[15] = "sample/1_im2";
+    char fileName3[15] = "mpi_out_test";
 
     MPI_Status status;
 
@@ -204,6 +170,8 @@ int main(int argc, char **argv){
 
     int lb = my_rank*rows;
     int hb = lb + rows;
+
+    //printf("%d have lb = %d and hb = %d\n", my_rank, lb, hb);
 
     //Starting and send rows of data1, data2
 
@@ -250,11 +218,11 @@ int main(int argc, char **argv){
 
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
-            vec[j] = data1[i][j];
+            vec[j] = data2[i][j];
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
-            data1[i][j] = vec[j];
+            data2[i][j] = vec[j];
         }
     }
 
@@ -282,8 +250,8 @@ int main(int argc, char **argv){
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
-        transpose(data1, data3);
-        transpose(data2, data3);
+        //transpose(data1);
+        //transpose(data2);
 
         for(i=1;i<p;i++){
             offset=i*rows;
@@ -320,11 +288,11 @@ int main(int argc, char **argv){
 
     for (j=0;j<N;j++) {
         for (i=lb;i<hb;i++) {
-            vec[i] = data2[i][j];
+            vec[j] = data2[i][j];
         }
         c_fft1d(vec, N, -1);
         for (i=lb;i<hb;i++) {
-            data2[i][j] = vec[i];
+            data2[i][j] = vec[j];
         }
     }
 
@@ -350,8 +318,8 @@ int main(int argc, char **argv){
 
 
     if(my_rank == 0){
-        transpose(data1, data3);
-        transpose(data2, data3);
+        //transpose(data1);
+        //transpose(data2);
         mmpoint(data1, data2, data3);
     }
 
@@ -375,11 +343,11 @@ int main(int argc, char **argv){
 
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
-            vec[j] = data1[i][j];
+            vec[j] = data3[i][j];
         }
         c_fft1d(vec, N, 1);
         for (j=0;j<N;j++) {
-            data1[i][j] = vec[j];
+            data3[i][j] = vec[j];
         }
     }
 
@@ -403,7 +371,7 @@ int main(int argc, char **argv){
     //Starting and send columns of data1, data2
 
     if(my_rank == 0){
-        transpose(data3, data1);
+        //transpose(data3);
 
         for(i=1;i<p;i++){
             offset=i*rows;
@@ -422,11 +390,11 @@ int main(int argc, char **argv){
 
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
-            vec[j] = data1[i][j];
+            vec[j] = data3[i][j];
         }
         c_fft1d(vec, N, 1);
         for (j=0;j<N;j++) {
-            data1[i][j] = vec[j];
+            data3[i][j] = vec[j];
         }
     }
 
@@ -435,6 +403,7 @@ int main(int argc, char **argv){
     //Receving columns of data1, data2
 
     if(my_rank == 0){
+        transpose(data3);
         for(i=1;i<p;i++){
             offset=i*rows;
             MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
@@ -445,14 +414,12 @@ int main(int argc, char **argv){
     }
 
     if(my_rank == 0){
-    /* Stop Clock */
-    stopTime = MPI_Wtime();
+        /* Stop Clock */
+        stopTime = MPI_Wtime();
 
-    printf("\nElapsed time = %lf s.\n",(stopTime - startTime));
-    printf("--------------------------------------------\n");
+        printf("\nElapsed time = %lf s.\n",(stopTime - startTime));
+        printf("--------------------------------------------\n");
     }
-
-
 
     MPI_Finalize();
 

@@ -98,7 +98,14 @@ void getData(char fileName[15], complex data[N][N]){
     fclose(fp);
 }
 
-void fft2d(complex data[N][N], int isign){
+void transpose(complex data[N][N], complex transpose[N][N]){
+    int i, j;
+    for (i = 0; i < N; i++)
+      for(j = 0 ; j < N ; j++)
+         transpose[j][i] = data[i][j];
+}
+
+void fft2d(complex data[N][N], complex transp[N][N], int isign){
 
     int i, j;
 
@@ -118,19 +125,24 @@ void fft2d(complex data[N][N], int isign){
 
     free(vec);
 
+    transpose(data, transp);
+
     vec = (complex *)malloc(N * sizeof(complex));
 
-    for (i=0;i<N;i++) {
-        for (j=0;j<N;j++) {
-            vec[j] = data[i][j];
+    for (j=0;j<N;j++) {
+        for (i=0;i<N;i++) {
+            vec[i] = transp[i][j];
         }
         c_fft1d(vec, N, isign);
-        for (j=0;j<N;j++) {
-            data[i][j] = vec[j];
+        for (i=0;i<N;i++) {
+            transp[i][j] = vec[i];
         }
     }
 
     free(vec);
+
+    transpose(transp, data);
+
 }
 
 void mmpoint(complex data1[N][N], complex data2[N][N], complex data3[N][N]){
@@ -164,86 +176,23 @@ void printfile(char fileName[15], complex data[N][N]){
 }
 
 int main(int argc, char **argv){
-    int my_rank, p, source = 0, dest;
-
     complex data1[N][N], data2[N][N], data3[N][N];
-    complex *vec, *vec2;
 
     char fileName1[15] = "sample/1_im1";
     char fileName2[15] = "sample/1_im2";
     char fileName3[15] = "out_test";
 
-    MPI_Datatype COMPLEX_STRUCT;
-    int          blocklens[2];
-    MPI_Aint     indices[2];
-    MPI_Datatype old_types[2];
+    getData(fileName1, data1);
+    getData(fileName2, data2);
 
-    MPI_Status status;
+    fft2d(data1, data3, -1);
+    fft2d(data2, data3, -1);
 
-    MPI_Init(&argc, &argv);
+    mmpoint(data1, data2, data3);
 
-    MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+    fft2d(data3, data1, 1);
 
-    MPI_Comm_size(MPI_COMM_WORLD, &p);
-
-    /* One value of each type */
-    blocklens[0] = N;
-    blocklens[1] = N;
-    /* The base types */
-    old_types[0] = MPI_FLOAT;
-    old_types[1] = MPI_FLOAT;
-    /* Make relative */
-    indices[1] = sizeof(float);
-    indices[0] = 0;
-    MPI_Type_struct( 2, blocklens, indices, old_types, &COMPLEX_STRUCT );
-    MPI_Type_commit( &COMPLEX_STRUCT );
-
-    int i,j;
-
-    double startTime, stopTime;
-
-    int offset;
-
-    int tag = 345;
-
-    int rows = N/p;
-
-    //Starting and send rows of data1, data2
-
-    if(my_rank == 0){
-        getData(fileName1, data1);
-        getData(fileName2, data2);
-
-        /* Start Clock */
-        printf("\nStarting clock.\n");
-        startTime = MPI_Wtime();
-
-        for(i=1;i<p;i++){
-            offset=i*rows;
-                //printf("source sending data1 to %d\n", dest);
-                MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
-                //printf("source sending data2 to %d\n", dest);
-                MPI_Send(&data2[offset][0], (N/p)*N, COMPLEX_STRUCT, i, tag, MPI_COMM_WORLD);
-        }
-    }else{
-        int lb = my_rank*(N/p);
-        //printf("%d reading data1\n", my_rank);
-        MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
-        //printf("%d reading data2\n", my_rank);
-        MPI_Recv(&data2[lb][0], (N/p)*N, COMPLEX_STRUCT, 0, tag, MPI_COMM_WORLD, &status);
-
-    }
-
-
-
-    /* Stop Clock */
-    stopTime = MPI_Wtime();
-
-    MPI_Finalize();
-
-    printf("\nElapsed time = %lf s.\n",(stopTime - startTime));
-    printf("--------------------------------------------\n");
-
+    printfile(fileName3, data3);
 
     return 0;
 }
