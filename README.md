@@ -20,3 +20,16 @@ project_sr_mpi.c - Parallel version using MPI_Send and MPI_Recv.
 project_bcast_mpi.c - Parallel version using MPI_Bcast.
 project_openmp_mpi.c - Parallel version using MPI and OpenMP.
 project_tasks_mpi.c - Parallel version using 2 processors for each task, has to be run with 8 processors.
+
+## Compile
+
+To compile just run the Makefile:
+
+```bash
+$ make
+```
+
+To clean:
+```bash
+make clean
+```

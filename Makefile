@@ -3,9 +3,9 @@ CC:=gcc
 
 program: test.c
 
-	$(CC) project.c
+	$(CC) project.c -o project.o
 
-	$(CC) project_transpose.c
+	$(CC) project_transpose.c -o project_transpose.o
 
 	$(MPICC) -c project_sr_mpi.c
 
@@ -25,3 +25,4 @@ program: test.c
 
 clean:
 	rm -rf *.o
+	rm -rf *_mpi
