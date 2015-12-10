@@ -212,8 +212,8 @@ int main(int argc, char **argv){
     }else{
 
         for(j = lb; j < hb; j++){
-            MPI_Recv(data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
-            MPI_Recv(data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data1[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data2[j], N, mystruct, 0, tag, MPI_COMM_WORLD, &status);
         }
     }
 
@@ -224,12 +224,10 @@ int main(int argc, char **argv){
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
-            if (vec[j].r != vec[j].r) printf("here");
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
-            if (vec[j].r != vec[j].r) printf("here2");
         }
     }
 
@@ -240,12 +238,10 @@ int main(int argc, char **argv){
     for (i=lb;i<hb;i++) {
         for (j=0;j<N;j++) {
             vec[j] = data2[i][j];
-            if (vec[j].r != vec[j].r) printf("here3");
         }
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data2[i][j] = vec[j];
-            if (vec[j].r != vec[j].r) printf("here4");
         }
     }
 
