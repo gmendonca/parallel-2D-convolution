@@ -171,7 +171,7 @@ int main(int argc, char **argv){
     int lb = my_rank*rows;
     int hb = lb + rows;
 
-    //printf("%d have lb = %d and hb = %d\n", my_rank, lb, hb);
+    printf("%d have lb = %d and hb = %d\n", my_rank, lb, hb);
 
     //Starting and send rows of data1, data2
 
@@ -192,9 +192,9 @@ int main(int argc, char **argv){
         }
     }else{
         //printf("%d reading data1\n", my_rank);
-        MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(data1[lb], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
         //printf("%d reading data2\n", my_rank);
-        MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(data2[lb], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
 
     }
 
@@ -206,6 +206,7 @@ int main(int argc, char **argv){
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
         }
+        printf("vec1[%d] = %f\n",i, vec[0].r);
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
@@ -235,15 +236,15 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
             //printf("%d reading data2\n", my_rank);
-            MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
         }
     }else{
         //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        MPI_Send(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
         //printf("source sending data2 to %d\n", dest);
-        MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        MPI_Send(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 
     }
 
@@ -304,15 +305,15 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
             //printf("%d reading data2\n", my_rank);
-            MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
         }
     }else{
         //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        MPI_Send(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
         //printf("source sending data2 to %d\n", dest);
-        MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        MPI_Send(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 
     }
 
@@ -346,6 +347,7 @@ int main(int argc, char **argv){
             vec[j] = data3[i][j];
         }
         c_fft1d(vec, N, 1);
+
         for (j=0;j<N;j++) {
             data3[i][j] = vec[j];
         }
@@ -360,11 +362,11 @@ int main(int argc, char **argv){
         for(i=1;i<p;i++){
             offset=i*rows;
             //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
         }
     }else{
         //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        MPI_Send(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 
     }
 
@@ -403,17 +405,17 @@ int main(int argc, char **argv){
     //Receving columns of data1, data2
 
     if(my_rank == 0){
-        transpose(data3);
         for(i=1;i<p;i++){
             offset=i*rows;
-            MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
         }
     }else{
-        MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        MPI_Send(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 
     }
 
     if(my_rank == 0){
+        //transpose(data3);
         /* Stop Clock */
         stopTime = MPI_Wtime();
 
