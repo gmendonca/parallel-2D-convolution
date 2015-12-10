@@ -3,6 +3,10 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/times.h>
+#include <sys/time.h>
+#include <time.h>
 
 typedef struct {float r; float i;} complex;
 static complex ctmp;
@@ -162,6 +166,13 @@ void printfile(char fileName[15], complex data[N][N]){
 }
 
 int main(){
+    /* Timing variables */
+    struct timeval etstart, etstop;  /* Elapsed times using gettimeofday() */
+    struct timezone tzdummy;
+    clock_t etstart2, etstop2;  /* Elapsed times using times() */
+    unsigned long long usecstart, usecstop;
+    struct tms cputstart, cputstop;  /* CPU times for my processes */
+
     complex data1[N][N], data2[N][N], data3[N][N];
 
     char fileName1[15] = "sample/1_im1";
@@ -171,6 +182,11 @@ int main(){
     getData(fileName1, data1);
     getData(fileName2, data2);
 
+    /* Start Clock */
+    printf("\nStarting clock.\n");
+    gettimeofday(&etstart, &tzdummy);
+    etstart2 = times(&cputstart);
+
     fft2d(data1, -1);
     fft2d(data2, -1);
 
@@ -178,7 +194,34 @@ int main(){
 
     fft2d(data3, 1);
 
+    /* Stop Clock */
+    gettimeofday(&etstop, &tzdummy);
+    etstop2 = times(&cputstop);
+    printf("Stopped clock.\n");
+    usecstart = (unsigned long long)etstart.tv_sec * 1000000 + etstart.tv_usec;
+    usecstop = (unsigned long long)etstop.tv_sec * 1000000 + etstop.tv_usec;
+
     printfile(fileName3, data3);
+
+    /* Display timing results */
+    printf("\nElapsed time = %g s.\n",
+    (float)(usecstop - usecstart)/(float)1000000);
+
+    printf("(CPU times are accurate to the nearest %g ms)\n",
+    1.0/(float)CLOCKS_PER_SEC * 1000.0);
+    printf("My total CPU time for parent = %g ms.\n",
+    (float)( (cputstop.tms_utime + cputstop.tms_stime) -
+         (cputstart.tms_utime + cputstart.tms_stime) ) /
+    (float)CLOCKS_PER_SEC * 1000);
+    printf("My system CPU time for parent = %g ms.\n",
+    (float)(cputstop.tms_stime - cputstart.tms_stime) /
+    (float)CLOCKS_PER_SEC * 1000);
+    printf("My total CPU time for child processes = %g ms.\n",
+    (float)( (cputstop.tms_cutime + cputstop.tms_cstime) -
+         (cputstart.tms_cutime + cputstart.tms_cstime) ) /
+    (float)CLOCKS_PER_SEC * 1000);
+        /* Contrary to the man pages, this appears not to include the parent */
+    printf("--------------------------------------------\n");
 
     return 0;
 }
