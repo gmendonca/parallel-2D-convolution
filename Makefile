@@ -13,7 +13,7 @@ program: project.c project_transpose.c project_sr_mpi.c project_openmp_mpi.c pro
 
 	$(MPICC) -c project_openmp_mpi.c -fopenmp
 
-	$(MPICC) -o project_openmp_mpi project_openmp_mpi.o -lm
+	$(MPICC) -o project_openmp_mpi project_openmp_mpi.o -fopenmp -lm
 
 	$(MPICC) -c project_bcast_mpi.c
 
