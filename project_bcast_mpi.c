@@ -238,7 +238,6 @@ int main(int argc, char **argv){
         for (j=0;j<N;j++) {
             vec[j] = data1[i][j];
         }
-        printf("vec[%d] = %f\n", i, vec[511].r);
         c_fft1d(vec, N, -1);
         for (j=0;j<N;j++) {
             data1[i][j] = vec[j];
@@ -456,10 +455,10 @@ int main(int argc, char **argv){
         printfile(fileName3, data3);
     }
 
-    free2dfloat(data1);
-    free2dfloat(data2);
-    free2dfloat(data3);
-    free2dfloat(data4);
+    free2dfloat(&data1);
+    free2dfloat(&data2);
+    free2dfloat(&data3);
+    free2dfloat(&data4);
 
     return 0;
 }
