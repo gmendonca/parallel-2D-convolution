@@ -33,3 +33,19 @@ To clean:
 ```bash
 make clean
 ```
+
+## Running
+
+```bash
+$ ./project.o
+
+$ ./project_transpose.o
+
+$ mpirun -n <Number of processors> ./project_sr_mpi
+
+$ mpirun -n <Number of processors> ./project_bcast_mpi
+
+$ mpirun -n <Number of processors> ./project_openmp_mpi
+
+$ mpirun -n <Number of processors> ./project_tasks_mpi
+```
