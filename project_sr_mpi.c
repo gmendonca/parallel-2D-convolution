@@ -260,8 +260,8 @@ int main(int argc, char **argv){
     }else{
 
         for(j = lb; j < hb; j++){
-            MPI_Send(&data1[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
-            MPI_Send(&data2[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data1[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data2[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
     }
 
@@ -328,8 +328,8 @@ int main(int argc, char **argv){
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data3[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
-            MPI_Send(&data4[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data3[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data4[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
     }
 
@@ -386,7 +386,7 @@ int main(int argc, char **argv){
         }
     }else{
         for(j = lb; j < hb; j++){
-            MPI_Send(&data3[lb][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data3[j][0], N, mystruct, 0, tag, MPI_COMM_WORLD);
         }
 
     }
