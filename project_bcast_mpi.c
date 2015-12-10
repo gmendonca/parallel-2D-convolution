@@ -148,8 +148,9 @@ int malloc2dfloat(complex ***array, int n, int m) {
        return -1;
     }
 
+    int i;
     /* set up the pointers into the contiguous memory */
-    for (int i=0; i<n; i++)
+    for (i=0; i<n; i++)
        (*array)[i] = &(p[i*m]);
 
     return 0;
