@@ -242,17 +242,17 @@ int main(int argc, char **argv){
     if(my_rank == 0){
         for(i=1;i<p;i++){
             offset=i*rows;
-            //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
-            //printf("%d reading data2\n", my_rank);
-            MPI_Recv(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data1[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            }
         }
     }else{
-        //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-        //printf("source sending data2 to %d\n", dest);
-        MPI_Send(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
 
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data1[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data2[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        }
     }
 
     //Starting and send columns of data1, data2
@@ -263,16 +263,16 @@ int main(int argc, char **argv){
 
         for(i=1;i<p;i++){
             offset=i*rows;
-                //printf("source sending data1 to %d\n", dest);
-                MPI_Send(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
-                //printf("source sending data2 to %d\n", dest);
-                MPI_Send(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Send(&data1[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+                MPI_Send(&data2[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            }
         }
     }else{
-        //printf("%d reading data1\n", my_rank);
-        MPI_Recv(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
-        //printf("%d reading data2\n", my_rank);
-        MPI_Recv(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        for(j = lb; j < hb; j++){
+            MPI_Recv(data1[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+            MPI_Recv(data2[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        }
 
     }
 
@@ -311,17 +311,16 @@ int main(int argc, char **argv){
     if(my_rank == 0){
         for(i=1;i<p;i++){
             offset=i*rows;
-            //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data1[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
-            //printf("%d reading data2\n", my_rank);
-            MPI_Recv(&data2[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data1[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+                MPI_Recv(data2[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            }
         }
     }else{
-        //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data1[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-        //printf("source sending data2 to %d\n", dest);
-        MPI_Send(&data2[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
-
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data1[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+            MPI_Send(&data2[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        }
     }
 
 
@@ -336,12 +335,15 @@ int main(int argc, char **argv){
     if(my_rank == 0){
         for(i=1;i<p;i++){
             offset=i*rows;
-                //printf("source sending data1 to %d\n", dest);
-                MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Send(&data3[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            }
         }
     }else{
-        //printf("%d reading data1\n", my_rank);
-        MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+
+        for(j = lb; j < hb; j++){
+            MPI_Recv(data3[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        }
 
     }
 
@@ -368,12 +370,14 @@ int main(int argc, char **argv){
     if(my_rank == 0){
         for(i=1;i<p;i++){
             offset=i*rows;
-            //printf("%d reading data1\n", my_rank);
-            MPI_Recv(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data3[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            }
         }
     }else{
-        //printf("source sending data1 to %d\n", dest);
-        MPI_Send(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data3[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        }
 
     }
 
@@ -384,12 +388,14 @@ int main(int argc, char **argv){
 
         for(i=1;i<p;i++){
             offset=i*rows;
-                //printf("source sending data1 to %d\n", dest);
-                MPI_Send(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Send(&data3[j][0], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD);
+            }
         }
     }else{
-        //printf("%d reading data1\n", my_rank);
-        MPI_Recv(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        for(j = lb; j < hb; j++){
+            MPI_Recv(data3[j], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD, &status);
+        }
 
     }
 
@@ -414,10 +420,14 @@ int main(int argc, char **argv){
     if(my_rank == 0){
         for(i=1;i<p;i++){
             offset=i*rows;
-            MPI_Recv(&data3[offset][0], rows*N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            for(j = offset; j < (offset+rows); j++){
+                MPI_Recv(data3[j], N, MPI_FLOAT, i, tag, MPI_COMM_WORLD, &status);
+            }
         }
     }else{
-        MPI_Send(&data3[lb][0], rows*N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        for(j = lb; j < hb; j++){
+            MPI_Send(&data3[lb][0], N, MPI_FLOAT, 0, tag, MPI_COMM_WORLD);
+        }
 
     }
 
